@@ -1,3 +1,6 @@
 {
-    "startUrl": "https://docs.apify.com/cli/docs"
-}
+    "startUrl": "https://www.xiaohongshu.com",
+    "maxCrawlDepth": 1,
+    "maxCrawlPages": 50,
+    "respectRobotsTxt": true
+  }

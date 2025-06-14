@@ -23,6 +23,13 @@
       "description": "The maximum number of pages to crawl. Default is 50.",
       "editor": "number",
       "default": 50
+    },
+    "respectRobotsTxt": {
+      "title": "Respect robots.txt",
+      "type": "boolean",
+      "description": "Whether to respect the robots.txt file of the target website. When enabled, the crawler will automatically check robots.txt and skip disallowed URLs. Default is true.",
+      "editor": "checkbox",
+      "default": true
     }
   },
   "required": ["startUrl"]

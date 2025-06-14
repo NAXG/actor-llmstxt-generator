@@ -39,10 +39,16 @@ async def main() -> None:
 
         max_crawl_depth = int(actor_input.get('maxCrawlDepth', 1))
         max_crawl_pages = int(actor_input.get('maxCrawlPages', 50))
+        respect_robots_txt = bool(actor_input.get('respectRobotsTxt', True))
 
-        proxy_config = await Actor.create_proxy_configuration()
+        # proxy_config = await Actor.create_proxy_configuration()
+        proxy_config = None
         results = await run_crawler(
-            url=url, max_crawl_depth=max_crawl_depth, max_crawl_pages=max_crawl_pages, proxy=proxy_config
+            url=url, 
+            max_crawl_depth=max_crawl_depth, 
+            max_crawl_pages=max_crawl_pages, 
+            proxy=proxy_config,
+            respect_robots_txt=respect_robots_txt
         )
 
         hostname = urlparse(url).hostname
@@ -87,11 +93,43 @@ async def main() -> None:
             )
 
         if is_dataset_empty:
-            msg = (
-                'No pages were crawled successfully!'
-                ' Please check the "apify/website-content-crawler" actor run for more details.'
-            )
-            raise RuntimeError(msg)
+            # Check if robots.txt compliance is enabled
+            if respect_robots_txt:
+                logger.warning(f'Website {url} is completely blocked by robots.txt, generating informational llms.txt file')
+                
+                # Generate an informational llms.txt file
+                data['description'] = f'This website ({url}) has a robots.txt file that disallows crawler access, making content extraction impossible.'
+                data['details'] = f'To access this website\'s content, consider:\n1. Contacting the website administrator for permission\n2. Manually visiting the website for information\n3. Checking if the website provides an API'
+                
+                # Add an explanation section
+                sections['robots-txt-blocked'] = {
+                    'title': 'Robots.txt Access Restriction',
+                    'links': [{
+                        'url': f'{url}/robots.txt',
+                        'title': 'robots.txt file',
+                        'description': 'View the crawler access rules for this website'
+                    }]
+                }
+                
+                output = render_llms_txt(data)
+                
+                # save into kv-store as a file to be able to download it
+                store = await Actor.open_key_value_store()
+                await store.set_value('llms.txt', output)
+                logger.info('Saved informational "llms.txt" file to key-value store!')
+
+                await Actor.push_data({'llms.txt': output})
+                logger.info('Pushed informational "llms.txt" file to dataset!')
+
+                await Actor.set_status_message('Website blocked by robots.txt - generated informational llms.txt file')
+                return
+            else:
+                # If robots.txt compliance is not enabled but still no content was crawled, raise original error
+                msg = (
+                    'No pages were crawled successfully!'
+                    ' Please check the crawler configuration or target website accessibility.'
+                )
+                raise RuntimeError(msg)
 
         for section_dir in sections_to_fill_title:
             sections[section_dir]['title'] = get_section_dir_title(section_dir, path_titles)
