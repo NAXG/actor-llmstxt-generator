@@ -41,8 +41,8 @@ async def main() -> None:
         max_crawl_pages = int(actor_input.get('maxCrawlPages', 50))
         respect_robots_txt = bool(actor_input.get('respectRobotsTxt', True))
 
-        # proxy_config = await Actor.create_proxy_configuration()
-        proxy_config = None
+        proxy_config = await Actor.create_proxy_configuration()
+        # proxy_config = None
         results = await run_crawler(
             url=url, 
             max_crawl_depth=max_crawl_depth, 
